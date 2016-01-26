@@ -1,0 +1,90 @@
+---
+title: "Excercises manner prediction"
+author: "Evgeniy Zabrodskiy"
+date: "25 January 2016"
+output: html_document
+---
+
+## Synopsis
+
+## Initializing and reading data
+```{r, results = "hide", warning = FALSE, message = FALSE}
+library(caret)
+library(e1071)
+library(randomForest)
+library(doMC)
+
+## Parallel processing on 3 cores
+registerDoMC(cores = 3)
+
+motiondata <- read.csv("pml-training.csv")
+quizdata <- read.csv("pml-testing.csv")
+```
+
+## Exploratory analysis
+Looking at the variables in the dataset we can see that there are lots of columns with NA values and it makes no sense to use them for prediction. Some other columns in the beginning of the dataset are also not needed and will be removed at the cleaning stage.  
+
+## Cleaning data
+Keep columns which may be useful for prediction (measurements from sensors), remove columns with NA values and some other columns which make no sense for prediction, such as measurement number, different timestamps, window flag, window number and user name.  
+```{r}
+varnames <- c("roll_belt", "pitch_belt", "yaw_belt", "total_accel_belt", 
+    "gyros_belt_x", "gyros_belt_y", "gyros_belt_z", 
+    "accel_belt_x", "accel_belt_y", "accel_belt_z", 
+    "magnet_belt_x", "magnet_belt_y", "magnet_belt_z", 
+    "roll_arm", "pitch_arm", "yaw_arm", "total_accel_arm", 
+    "gyros_arm_x", "gyros_arm_y", "gyros_arm_z", 
+    "accel_arm_x", "accel_arm_y", "accel_arm_z", 
+    "magnet_arm_x", "magnet_arm_y", "magnet_arm_z", 
+    "roll_dumbbell", "pitch_dumbbell", "yaw_dumbbell", "total_accel_dumbbell", 
+    "gyros_dumbbell_x", "gyros_dumbbell_y", "gyros_dumbbell_z", 
+    "accel_dumbbell_x", "accel_dumbbell_y", "accel_dumbbell_z", 
+    "magnet_dumbbell_x", "magnet_dumbbell_y", "magnet_dumbbell_z", 
+    "roll_forearm", "pitch_forearm", "yaw_forearm", "total_accel_forearm", 
+    "gyros_forearm_x", "gyros_forearm_y", "gyros_forearm_z", 
+    "accel_forearm_x", "accel_forearm_y", "accel_forearm_z", 
+    "magnet_forearm_x", "magnet_forearm_y", "magnet_forearm_z")
+
+cleandata <- motiondata[, c(varnames, "classe")]
+cleanquizdata <- quizdata[, c(varnames, "problem_id")]
+```
+
+Test variables that are left for variance. If the variance is close to zero, it will not contribute to prediction with the following command.  
+```{r, eval = FALSE}
+nearZeroVar(training, saveMetrics = TRUE)
+```
+To keep the report concise, the output is not shown here but the variance of all the predictiors left in the dataset after cleaning is not close to zero thus all the predictions will be used for further modeling.  
+
+## Model selection
+Divide the dataset to training and testing set. The traing set will be used to train different models and the test set will be used to check the accuracy of these models. The model with the best accuracy will be chosen as the final model for prediction on the quiz dataset.  
+```{r}
+set.seed(12345)
+inTrain <- createDataPartition(y = cleandata$classe, p = 0.8, list = FALSE)
+training <- cleandata[inTrain,]
+testing <- cleandata[-inTrain,]
+```
+
+### Linear discriminant analysis model
+```{r}
+set.seed(12345)
+fit <- train(classe ~ ., method = "lda", data = training)
+p <- predict(fit, testing)
+confusionMatrix(p, testing$classe)
+```
+### Support vector machine model
+```{r}
+set.seed(12345)
+fit <- svm(classe ~ ., data = training)
+p <- predict(fit, testing)
+confusionMatrix(p, testing$classe)
+```
+### Random forrest model
+```{r}
+set.seed(12345)
+fit <- randomForest(classe ~ ., data = training, ntree = 100, importance = TRUE, do.trace = FALSE)
+p <- predict(fit, testing)
+confusionMatrix(p, testing$classe)
+```
+
+## References
+
+1. The data for this project come from this source: [http://groupware.les.inf.puc-rio.br/har](http://groupware.les.inf.puc-rio.br/har)
