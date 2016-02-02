@@ -1,4 +1,4 @@
-# Excercises manner prediction
+# Exercises manner prediction
 Evgeniy Zabrodskiy  
 27 January 2016  
 

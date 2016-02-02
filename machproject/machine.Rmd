@@ -1,11 +1,11 @@
 ---
-title: "Excercises manner prediction"
+title: "Exercises manner prediction"
 author: "Evgeniy Zabrodskiy"
 date: "27 January 2016"
 output:
+  pdf_document: default
   html_document:
     keep_md: yes
-  pdf_document: default
 ---
 
 ## 1. Synopsis
